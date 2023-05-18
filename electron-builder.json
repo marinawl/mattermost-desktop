@@ -1,8 +1,7 @@
 {
   "publish": [
     {
-    "provider": "generic",
-    "url": "https://releases.mattermost.com/desktop"
+    "provider": "github"
     }
   ],
   "appId": "Mattermost.Desktop",

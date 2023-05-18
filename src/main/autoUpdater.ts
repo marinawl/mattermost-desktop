@@ -173,6 +173,13 @@ export class UpdateManager {
             if (manually) {
                 autoUpdater.once('update-not-available', this.displayNoUpgrade);
             }
+            autoUpdater.setFeedURL({
+                provider: 'github',
+                repo:'mattermost_test_desktop',
+                owner: 'tnfl',
+                private: true,
+                token: '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'
+            })
             autoUpdater.checkForUpdates().then((result) => {
                 if (!result?.updateInfo) {
                     ipcMain.emit(NO_UPDATE_AVAILABLE);
