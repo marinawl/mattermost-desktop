@@ -175,8 +175,8 @@ export class UpdateManager {
             }
             autoUpdater.setFeedURL({
                 provider: 'github',
-                repo:'mattermost_test_desktop',
-                owner: 'tnfl',
+                owner: 'marinawl',
+                repo: 'mattermost-desktop',
                 private: true,
                 token: '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'
             })
