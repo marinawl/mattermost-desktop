@@ -26,7 +26,7 @@
   <?define ProgramFilesVersion = "ProgramFilesFolder" ?>
   <?define ReleaseDir = "../release/win-ia32-unpacked" ?>
   <?endif ?>
-  <!-- 
+  <!--
   The product GUID must not be changed except when:
   - the old and new versions have to coexist on the user's computer
   - the .msi filename change for any reason
@@ -35,7 +35,7 @@
   - there are any changes in the feature hierarchy (child
     feature moving out of a parent, or a parent feature getting a new child).
   -->
-  <Product Id="*" UpgradeCode="8523DAF0-699D-4CC7-9A65-C5E696A9DE6D" Name="Mattermost Desktop" Manufacturer="Mattermost, Inc." Language="1033" Codepage="1252" Version="5.4.0.2725">
+  <Product Id="*" UpgradeCode="8523DAF0-699D-4CC7-9A65-C5E696A9DE6D" Name="Mattermost Desktop" Manufacturer="Mattermost, Inc." Language="1033" Codepage="1252" Version="5.4.1.2727">
     <!--
     perMachine installs the app system wide (ALLUSERS is set to 1)
     src.: https://www.joyofsetup.com/2008/04/01/new-wix-feature-setting-package-installation-scope/
@@ -136,7 +136,7 @@
     <Property Id="ARPURLINFOABOUT">https://mattermost.com/</Property>
     <!--
       Next line will be added by `Makefile.ps1`, leaving it here for reference, as it will be added before constructing the MSI
-      <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/0.0.0/mattermost-desktop-0.0.0-$(var.Platform).msi</Property> 
+      <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/0.0.0/mattermost-desktop-0.0.0-$(var.Platform).msi</Property>
     -->
     <Property Id="ADDDESKTOPSHORTCUT">true</Property>
     <Property Id="ADDSTARTMENUSHORTCUT">true</Property>
@@ -1001,12 +1001,6 @@ The [Installer] will complete the installation of [ProductName] on your computer
     <Binary Id="ModifyIcon" SourceFile="../resources/windows/msi_modify.ico" />
     <Binary Id="RepairIcon" SourceFile="../resources/windows/msi_repair.ico" />
     <Binary Id="RemoveIcon" SourceFile="../resources/windows/msi_remove.ico" />
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
-    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.0-develop.1/mattermost-desktop-5.4.0-develop.1-$(var.Platform).msi</Property>
+    <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/5.4.1-rc.1/mattermost-desktop-5.4.1-rc.1-$(var.Platform).msi</Property>
   </Product>
 </Wix>

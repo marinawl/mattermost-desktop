@@ -1,0 +1,8 @@
+version: 5.4.0
+files:
+    - url: https://github.com/marinawl/mattermost-desktop/releases/5.4.0/download/mattermost-desktop-5.4.0-develop.1-win-x64.zip
+      sha512: 98FF308A96A85153B92B4868DE593B3D35531F442FC43D2515427B999F78CE7F
+      size: 100MB
+path: https://github.com/marinawl/mattermost-desktop/releases/5.4.0/download/mattermost-desktop-5.4.0-develop.1-win-x64.zip
+sha512: 98FF308A96A85153B92B4868DE593B3D35531F442FC43D2515427B999F78CE7F
+releaseDate: '2023-05-19T10:00:00.768Z'
