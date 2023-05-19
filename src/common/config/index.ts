@@ -419,10 +419,10 @@ export class Config extends EventEmitter {
                 fs.accessSync(path.join(path.dirname(this.appPath), '../../'), fs.constants.W_OK);
 
                 // check to make sure that app-update.yml exists
-                if (!fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'))) {
+                /*if (!fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'))) {
                     log.warn('app-update.yml does not exist, disabling auto-updates');
                     return false;
-                }
+                }*/
             } catch (error) {
                 log.info(`${this.appPath}: ${error}`);
                 log.warn('autoupgrade disabled');

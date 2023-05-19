@@ -36,7 +36,7 @@
     "clean": "rm -rf release/ node_modules/ src/node_modules/ dist/ && find src -name '*_bundle.js' | xargs rm",
     "clean-install": "npm run clean && npm install",
     "clean-dist": "rm -rf dist/",
-    "watch": "run-p watch:*",
+    "watch": "cross-env CAN_UPGRADE=true run-p watch:*",
     "watch:main": "node scripts/watch_main_and_preload.js",
     "watch:renderer": "webpack-dev-server --config webpack.config.renderer.js",
     "test": "npm-run-all lint:js test:unit test:e2e",
@@ -105,7 +105,7 @@
     ],
     "globals": {
       "__HASH_VERSION__": "5.0.0",
-      "__CAN_UPGRADE__": false,
+      "__CAN_UPGRADE__": true,
       "__IS_NIGHTLY_BUILD__": false,
       "__IS_MAC_APP_STORE__": false,
       "__DISABLE_GPU__": false,
