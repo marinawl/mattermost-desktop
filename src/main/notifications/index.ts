@@ -93,6 +93,7 @@ export function displayCustomCommand(sender: SenderData) {
         // 이미 호출되어 있는 경우 호출하지 않음
         if(windowIsVisible('Window_Call_User')) return ;
 
+        // 명령어를 제외한 내용 추출
         content = sliceExclamationMarkCommand('!호출', message);
         windowUrl = 'callUser.html'
         windowOption = {
