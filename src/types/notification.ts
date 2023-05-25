@@ -10,3 +10,9 @@ export type MentionData = {
 export type MentionOptions = NotificationConstructorOptions & {
     data: MentionData;
 }
+
+export type SenderData = {
+    imgUrl: string,
+    name: string,
+    message: string
+}

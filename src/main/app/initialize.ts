@@ -40,7 +40,7 @@ import {
     WINDOW_MAXIMIZE,
     WINDOW_MINIMIZE,
     WINDOW_RESTORE,
-    DOUBLE_CLICK_ON_WINDOW,
+    DOUBLE_CLICK_ON_WINDOW, CALLS_CUSTOM_COMMAND,
 } from 'common/communication';
 import Config from 'common/config';
 import {isTrustedURL, parseURL} from 'common/utils/url';
@@ -91,7 +91,7 @@ import {
     handleMentionNotification,
     handleOpenAppMenu,
     handleQuit,
-    handlePingDomain,
+    handlePingDomain, handleCustomCommand,
 } from './intercom';
 import {
     handleEditServerModal,
@@ -269,6 +269,7 @@ function initializeBeforeAppReady() {
 
 function initializeInterCommunicationEventListeners() {
     ipcMain.on(NOTIFY_MENTION, handleMentionNotification);
+    ipcMain.on(CALLS_CUSTOM_COMMAND, handleCustomCommand);
     ipcMain.handle('get-app-version', handleAppVersion);
     ipcMain.on(UPDATE_SHORTCUT_MENU, handleUpdateMenuEvent);
     ipcMain.on(FOCUS_BROWSERVIEW, ViewManager.focusCurrentView);

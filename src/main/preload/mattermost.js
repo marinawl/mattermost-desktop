@@ -35,7 +35,7 @@ import {
     DESKTOP_SOURCES_MODAL_REQUEST,
     CALLS_WIDGET_SHARE_SCREEN,
     CLOSE_DOWNLOADS_DROPDOWN,
-    CALLS_ERROR,
+    CALLS_ERROR, CALLS_CUSTOM_COMMAND,
 } from 'common/communication';
 
 const UNREAD_COUNT_INTERVAL = 1000;
@@ -142,10 +142,14 @@ window.addEventListener('message', ({origin, data = {}} = {}) => {
     // it will be captured by itself too
         break;
     case 'dispatch-notification': {
+        const {title, body, channel, teamId, url, silent, data: messageData, sender} = message;
+
+        ipcRenderer.send(CALLS_CUSTOM_COMMAND, sender)
+
         if (shouldSendNotifications) {
-            const {title, body, channel, teamId, url, silent, data: messageData} = message;
             ipcRenderer.send(NOTIFY_MENTION, title, body, channel, teamId, url, silent, messageData);
         }
+
         break;
     }
     case 'browser-history-push': {
