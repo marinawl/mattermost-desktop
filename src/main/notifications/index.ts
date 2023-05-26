@@ -86,6 +86,7 @@ export function displayMention(title: string, body: string, channel: {id: string
 export function displayCustomCommand(sender: SenderData) {
     const {message, name, imgUrl} = sender;
     const {win: parentWindow} = MainWindow;
+    const displays = screen.getAllDisplays();
     let content = '', windowOption = {}, windowUrl = '';
 
     // 명령어가 들어가 있을 경우 호출
@@ -97,17 +98,18 @@ export function displayCustomCommand(sender: SenderData) {
         content = sliceExclamationMarkCommand('!호출', message);
         windowUrl = 'callUser.html'
         windowOption = {
-            width: screen.getPrimaryDisplay().workAreaSize.width,
-            height: screen.getPrimaryDisplay().workAreaSize.height,
+            width: displays[0].size.width,
+            height: displays[0].size.height,
             resizable: false,
             alwaysOnTop: true,
             fullscreen: true,
             backgroundColor: '#ffffff',
-            frame: false,
             skipTaskbar: true,
             transparent: true,
+            frame: false,
+            modal: true,
+            focusable: false,
             parent: parentWindow,
-            modal: true
         }
     }
 
@@ -120,9 +122,44 @@ export function displayCustomCommand(sender: SenderData) {
         query.set('name', name);
         query.set('content', content);
 
-        const newWindow = new BrowserWindow(windowOption);
+        const mainModal = new BrowserWindow(windowOption);
 
-        newWindow.loadURL(getLocalURLString(windowUrl, query));
+        mainModal.setPosition(displays[0].bounds.x, displays[0].bounds.y);
+        mainModal.once('ready-to-show', () => {
+            mainModal.show();
+        });
+
+        mainModal.loadURL(getLocalURLString(windowUrl, query));
+
+        // 다중 모니터일경우
+        if(displays?.length > 1) {
+            const subModals: BrowserWindow[] = [];
+
+            // 모니터 갯수만큼 modal 창 생성
+            for(let i = 1; i < displays.length; i++) {
+                const subModal = new BrowserWindow({
+                    width: displays[i].size.width,
+                    height: displays[i].size.height,
+                    resizable: false,
+                    alwaysOnTop: true,
+                    fullscreen: true,
+                    backgroundColor: '#ffffff',
+                    skipTaskbar: true,
+                    transparent: true,
+                    frame: false,
+                    modal: true,
+                    focusable: false,
+                });
+
+                subModal.setPosition(displays[i].bounds.x, displays[i].bounds.y);
+                subModals.push(subModal);
+            }
+
+            // 호출 창 종료시 나머지 서브창도 종료되게 설정
+            mainModal.once('closed', () => {
+                subModals.forEach(modal => modal.close())
+            });
+        }
     }
 }
 

@@ -1,8 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;400;700&display=swap');
-
 body {
     overflow: hidden;
-    font-family: 'Noto Sans KR', sans-serif;
 }
 
 .modal-call-user {
@@ -14,8 +11,8 @@ body {
     height: 100vh;
 
     .modal-call-user-profile img {
-        width: 100px;
-        height: 100px;
+        width: 120px;
+        height: 120px;
         border-radius: 100%;
     }
 
