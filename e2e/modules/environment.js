@@ -33,7 +33,7 @@ const downloadsLocation = path.join(userDataDir, 'Downloads');
 const boundsInfoPath = path.join(userDataDir, 'bounds-info.json');
 const appUpdatePath = path.join(userDataDir, 'app-update.yml');
 const exampleURL = 'http://example.com/';
-const mattermostURL = process.env.MM_TEST_SERVER_URL || 'http://localhost:8065/';
+const mattermostURL = process.env.MM_TEST_SERVER_URL || 'http://192.168.30.15:8065/';
 
 if (process.platform === 'win32') {
     const robot = require('robotjs');

@@ -19,7 +19,7 @@ import {DownloadNotification} from './Download';
 import {NewVersionNotification, UpgradeNotification} from './Upgrade';
 import getLinuxDoNotDisturb from './dnd-linux';
 import getWindowsDoNotDisturb from './dnd-windows';
-import {getLocalURLString} from "../utils";
+import {getServerURLString} from "../utils";
 
 export const currentNotifications = new Map();
 
@@ -84,7 +84,9 @@ export function displayMention(title: string, body: string, channel: {id: string
 
 // 채팅창으로 사용자 지정 명령어 전송시 호출
 export function displayCustomCommand(sender: SenderData) {
-    const {message, name, imgUrl} = sender;
+    const {message, name, imgUrl, baseUrl} = sender;
+
+    // @ts-ignore
     const {win: parentWindow} = MainWindow;
     const displays = screen.getAllDisplays();
     let content = '', windowOption = {}, windowUrl = '';
@@ -96,7 +98,7 @@ export function displayCustomCommand(sender: SenderData) {
 
         // 명령어를 제외한 내용 추출
         content = sliceExclamationMarkCommand('!호출', message);
-        windowUrl = 'callUser.html'
+        windowUrl = '/command/callUser'
         windowOption = {
             width: displays[0].size.width,
             height: displays[0].size.height,
@@ -107,9 +109,10 @@ export function displayCustomCommand(sender: SenderData) {
             skipTaskbar: true,
             transparent: true,
             frame: false,
+            parent: parentWindow,
             modal: true,
             focusable: false,
-            parent: parentWindow,
+            show: false
         }
     }
 
@@ -122,19 +125,18 @@ export function displayCustomCommand(sender: SenderData) {
         query.set('name', name);
         query.set('content', content);
 
+        // main modal 생성
         const mainModal = new BrowserWindow(windowOption);
 
+        // main modal position 을 주 모니터로 설정
         mainModal.setPosition(displays[0].bounds.x, displays[0].bounds.y);
-        mainModal.once('ready-to-show', () => {
-            mainModal.show();
-        });
 
-        mainModal.loadURL(getLocalURLString(windowUrl, query));
+        // main modal URL 호출
+        mainModal.loadURL(getServerURLString(baseUrl + windowUrl, query));
 
+        const subModals: BrowserWindow[] = [];
         // 다중 모니터일경우
         if(displays?.length > 1) {
-            const subModals: BrowserWindow[] = [];
-
             // 모니터 갯수만큼 modal 창 생성
             for(let i = 1; i < displays.length; i++) {
                 const subModal = new BrowserWindow({
@@ -149,8 +151,10 @@ export function displayCustomCommand(sender: SenderData) {
                     frame: false,
                     modal: true,
                     focusable: false,
+                    show: false
                 });
 
+                // 다중 모니터 포지션 설정
                 subModal.setPosition(displays[i].bounds.x, displays[i].bounds.y);
                 subModals.push(subModal);
             }
@@ -160,6 +164,12 @@ export function displayCustomCommand(sender: SenderData) {
                 subModals.forEach(modal => modal.close())
             });
         }
+
+        // 메인 모달창 load 완료 후 subModal 까지 show
+        mainModal.webContents.on('did-finish-load', () => {
+            mainModal.show();
+            subModals.forEach((modal) => modal.show())
+        });
     }
 }
 

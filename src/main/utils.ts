@@ -93,6 +93,18 @@ export function getLocalURLString(urlPath: string, query?: Map<string, string>, 
     return localUrl.href;
 }
 
+export function getServerURLString(urlPath: string, query?: Map<string, string>) {
+    const localUrl = new URL(urlPath);
+
+    if (query) {
+        query.forEach((value: string, key: string) => {
+            localUrl.searchParams.append(encodeURIComponent(key), encodeURIComponent(value));
+        });
+    }
+
+    return localUrl.href;
+}
+
 export function getLocalPreload(file: string) {
     if (Utils.runMode() === PRODUCTION) {
         return path.join(app.getAppPath(), `${file}`);
