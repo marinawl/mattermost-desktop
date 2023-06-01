@@ -44,7 +44,7 @@
     "main.notifications.upgrade.newVersion.body": "지금 다운로드할 수 있는 새 버전이 있습니다.",
     "main.notifications.download.complete.title": "다운로드 완료",
     "main.notifications.download.complete.body": "다운로드 완료 \n {fileName}",
-    "main.menus.tray.settings": "설정",
+    "main.menus.tray.settings": "설정...",
     "main.menus.tray.preferences": "환경설정...",
     "main.menus.app.window.zoom": "비율",
     "main.menus.app.window.showServers": "서버 보기",
