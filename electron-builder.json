@@ -1,10 +1,9 @@
 {
-  "publish": [
-    {
-    "provider": "generic",
-        "url": "https://github.com/marinawl/mattermost-desktop"
-    }
-  ],
+  "publish": {
+      "provider": "github",
+      "owner": "marinawl",
+      "repo": "mattermost-desktop"
+  },
   "appId": "Mattermost.Desktop",
   "artifactName": "${version}/${name}-${version}-${os}-${arch}.${ext}",
   "directories": {
@@ -162,8 +161,7 @@
           "NOTICE.txt"
         ]
       }
-    ],
-    "publisherName": "CN=\"Mattermost, Inc.\", O=\"Mattermost, Inc.\", L=Palo Alto, S=California, C=US"
+    ]
   },
   "nsis": {
     "artifactName": "${version}/${name}-setup-${version}-win.${ext}"

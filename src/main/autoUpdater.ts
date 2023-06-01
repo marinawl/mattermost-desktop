@@ -32,11 +32,6 @@ const log = new Logger('UpdateManager');
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 autoUpdater.disableWebInstaller = true;
-autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'marinawl',
-    repo: 'mattermost-desktop',
-})
 
 const assetsDir = path.resolve(app.getAppPath(), 'assets');
 const appIconURL = path.resolve(assetsDir, 'appicon_with_spacing_32.png');
