@@ -144,7 +144,10 @@ window.addEventListener('message', ({origin, data = {}} = {}) => {
     case 'dispatch-notification': {
         const {title, body, channel, teamId, url, silent, data: messageData, sender} = message;
 
-        ipcRenderer.send(CALLS_CUSTOM_COMMAND, sender)
+        // 작성자 정보가 있을 경우 호출
+        if(sender) {
+            ipcRenderer.send(CALLS_CUSTOM_COMMAND, sender)
+        }
 
         if (shouldSendNotifications) {
             ipcRenderer.send(NOTIFY_MENTION, title, body, channel, teamId, url, silent, messageData);
