@@ -17,8 +17,7 @@ import {TAB_FOCALBOARD, TAB_MESSAGING, TAB_PLAYBOOKS, MattermostView, getDefault
 import MessagingView from 'common/views/MessagingView';
 import FocalboardView from 'common/views/FocalboardView';
 import PlaybooksView from 'common/views/PlaybooksView';
-import {isInternalURL, parseURL} from 'common/utils/url';
-import Utils from 'common/utils/util';
+import {getFormattedPathName, isInternalURL, parseURL} from 'common/utils/url';
 
 const log = new Logger('ServerManager');
 
@@ -26,7 +25,6 @@ export class ServerManager extends EventEmitter {
     private servers: Map<string, MattermostServer>;
     private remoteInfo: Map<string, RemoteInfo>;
     private serverOrder: string[];
-    private currentServerId?: string;
 
     private views: Map<string, MattermostView>;
     private viewOrder: Map<string, string[]>;
@@ -71,19 +69,6 @@ export class ServerManager extends EventEmitter {
         }, [] as MattermostServer[]);
     }
 
-    getCurrentServer = () => {
-        log.debug('getCurrentServer');
-
-        if (!this.currentServerId) {
-            throw new Error('No server set as current');
-        }
-        const server = this.servers.get(this.currentServerId);
-        if (!server) {
-            throw new Error('Current server does not exist');
-        }
-        return server;
-    }
-
     getLastActiveTabForServer = (serverId: string) => {
         log.withPrefix(serverId).debug('getLastActiveTabForServer');
 
@@ -122,7 +107,6 @@ export class ServerManager extends EventEmitter {
         remoteInfos.forEach((remoteInfo, serverId) => {
             this.remoteInfo.set(serverId, remoteInfo);
             hasUpdates = this.updateServerURL(serverId) || hasUpdates;
-            hasUpdates = this.openExtraViews(serverId) || hasUpdates;
         });
 
         if (hasUpdates) {
@@ -138,7 +122,8 @@ export class ServerManager extends EventEmitter {
             return undefined;
         }
         const server = this.getAllServers().find((server) => {
-            return isInternalURL(parsedURL, server.url, ignoreScheme) && parsedURL.pathname.match(new RegExp(`^${server.url.pathname}(.+)?(/(.+))?$`));
+            return isInternalURL(parsedURL, server.url, ignoreScheme) &&
+                getFormattedPathName(parsedURL.pathname).startsWith(server.url.pathname);
         });
         if (!server) {
             return undefined;
@@ -149,7 +134,7 @@ export class ServerManager extends EventEmitter {
         views.
             filter((view) => view && view.type !== TAB_MESSAGING).
             forEach((view) => {
-                if (parsedURL.pathname.match(new RegExp(`^${view.url.pathname}(/(.+))?`))) {
+                if (getFormattedPathName(parsedURL.pathname).startsWith(view.url.pathname)) {
                     selectedView = view;
                 }
             });
@@ -186,10 +171,6 @@ export class ServerManager extends EventEmitter {
             viewOrder.push(newView.id);
         });
         this.viewOrder.set(newServer.id, viewOrder);
-
-        if (!this.currentServerId) {
-            this.currentServerId = newServer.id;
-        }
 
         // Emit this event whenever we update a server URL to ensure remote info is fetched
         this.emit(SERVERS_URL_MODIFIED, [newServer.id]);
@@ -234,10 +215,6 @@ export class ServerManager extends EventEmitter {
         this.remoteInfo.delete(serverId);
         this.servers.delete(serverId);
 
-        if (this.currentServerId === serverId && this.hasServers()) {
-            this.currentServerId = this.serverOrder[0];
-        }
-
         this.persistServers();
     }
 
@@ -257,8 +234,6 @@ export class ServerManager extends EventEmitter {
             return;
         }
         this.lastActiveView.set(view.server.id, viewId);
-
-        this.currentServerId = view.server.id;
 
         const serverOrder = this.serverOrder.findIndex((srv) => srv === view.server.id);
         if (serverOrder < 0) {
@@ -282,11 +257,6 @@ export class ServerManager extends EventEmitter {
         }
         this.filterOutDuplicateServers();
         this.serverOrder = serverOrder;
-        if (Config.lastActiveServer && this.serverOrder[Config.lastActiveServer]) {
-            this.currentServerId = this.serverOrder[Config.lastActiveServer];
-        } else {
-            this.currentServerId = this.serverOrder[0];
-        }
     }
 
     private filterOutDuplicateServers = () => {
@@ -405,42 +375,6 @@ export class ServerManager extends EventEmitter {
             return true;
         }
         return false;
-    }
-
-    private openExtraViews = (serverId: string) => {
-        const server = this.servers.get(serverId);
-        const remoteInfo = this.remoteInfo.get(serverId);
-
-        if (!(server && remoteInfo)) {
-            return false;
-        }
-
-        if (!(remoteInfo.serverVersion && Utils.isVersionGreaterThanOrEqualTo(remoteInfo.serverVersion, '6.0.0'))) {
-            return false;
-        }
-
-        let hasUpdates = false;
-        const viewOrder = this.viewOrder.get(serverId);
-        if (viewOrder) {
-            viewOrder.forEach((viewId) => {
-                const view = this.views.get(viewId);
-                if (view) {
-                    if (view.type === TAB_PLAYBOOKS && remoteInfo.hasPlaybooks && typeof view.isOpen === 'undefined') {
-                        log.withPrefix(view.id).verbose('opening Playbooks');
-                        view.isOpen = true;
-                        this.views.set(viewId, view);
-                        hasUpdates = true;
-                    }
-                    if (view.type === TAB_FOCALBOARD && remoteInfo.hasFocalboard && typeof view.isOpen === 'undefined') {
-                        log.withPrefix(view.id).verbose('opening Boards');
-                        view.isOpen = true;
-                        this.views.set(viewId, view);
-                        hasUpdates = true;
-                    }
-                }
-            });
-        }
-        return hasUpdates;
     }
 
     private includeId = (id: string, ...prefixes: string[]) => {

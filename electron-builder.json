@@ -43,13 +43,10 @@
     "artifactName": "${version}/${name}_${version}-1_${arch}.${ext}",
     "synopsis": "Mattermost Desktop App",
     "depends": [
-      "gconf2",
-      "gconf-service",
       "libnotify4",
       "libxtst6",
       "libnss3"
     ],
-    "category": "contrib/net",
     "priority": "optional"
   },
   "asarUnpack": [
@@ -64,7 +61,6 @@
       "appimage",
       "rpm"
     ],
-    "icon": "src/assets/icon.icns",
     "extraFiles": [
       {
         "filter": [
@@ -100,7 +96,6 @@
         ]
       }
     ],
-    "icon": "src/assets/osx/osx_icon.icns",
     "hardenedRuntime": true,
     "gatekeeperAssess": true,
     "entitlements": "./entitlements.mac.plist",
@@ -165,7 +160,8 @@
     "publisherName": "CN=\"Mattermost, Inc.\", O=\"Mattermost, Inc.\", L=Palo Alto, S=California, C=US"
   },
   "nsis": {
-    "artifactName": "${version}/${name}-setup-${version}-win.${ext}"
+    "artifactName": "${version}/${name}-setup-${version}-win.${ext}",
+    "packElevateHelper": false
   },
   "rpm": {
     "fpm": ["--rpm-rpmbuild-define", "_build_id_links none"]

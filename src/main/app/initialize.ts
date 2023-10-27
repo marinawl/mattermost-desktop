@@ -4,20 +4,13 @@
 import path from 'path';
 
 import {app, ipcMain, nativeTheme, session} from 'electron';
-import installExtension, {REACT_DEVELOPER_TOOLS} from 'electron-devtools-installer';
+import installExtension, {REACT_DEVELOPER_TOOLS} from 'electron-extension-installer';
 import isDev from 'electron-is-dev';
 
 import {
-    SWITCH_SERVER,
     FOCUS_BROWSERVIEW,
     QUIT,
-    SHOW_NEW_SERVER_MODAL,
     NOTIFY_MENTION,
-    SWITCH_TAB,
-    CLOSE_VIEW,
-    OPEN_VIEW,
-    SHOW_EDIT_SERVER_MODAL,
-    SHOW_REMOVE_SERVER_MODAL,
     UPDATE_SHORTCUT_MENU,
     GET_AVAILABLE_SPELL_CHECKER_LANGUAGES,
     USER_ACTIVITY_UPDATE,
@@ -29,11 +22,6 @@ import {
     GET_LOCAL_CONFIGURATION,
     UPDATE_CONFIGURATION,
     UPDATE_PATHS,
-    UPDATE_SERVER_ORDER,
-    UPDATE_TAB_ORDER,
-    GET_LAST_ACTIVE,
-    GET_ORDERED_SERVERS,
-    GET_ORDERED_TABS_FOR_SERVER,
     SERVERS_URL_MODIFIED,
     GET_DARK_MODE,
     WINDOW_CLOSE,
@@ -41,9 +29,9 @@ import {
     WINDOW_MINIMIZE,
     WINDOW_RESTORE,
     DOUBLE_CLICK_ON_WINDOW,
+    TOGGLE_SECURE_INPUT,
 } from 'common/communication';
 import Config from 'common/config';
-import {isTrustedURL, parseURL} from 'common/utils/url';
 import {Logger} from 'common/log';
 
 import AllowProtocolDialog from 'main/allowProtocolDialog';
@@ -58,12 +46,12 @@ import CriticalErrorHandler from 'main/CriticalErrorHandler';
 import downloadsManager from 'main/downloadsManager';
 import i18nManager from 'main/i18nManager';
 import parseArgs from 'main/ParseArgs';
+import PermissionsManager from 'main/permissionsManager';
 import ServerManager from 'common/servers/serverManager';
 import TrustedOriginsStore from 'main/trustedOrigins';
 import Tray from 'main/tray/tray';
 import UserActivityMonitor from 'main/UserActivityMonitor';
 import ViewManager from 'main/views/viewManager';
-import CallsWidgetWindow from 'main/windows/callsWidgetWindow';
 import MainWindow from 'main/windows/mainWindow';
 
 import {protocols} from '../../../electron-builder.json';
@@ -92,16 +80,8 @@ import {
     handleOpenAppMenu,
     handleQuit,
     handlePingDomain,
+    handleToggleSecureInput,
 } from './intercom';
-import {
-    handleEditServerModal,
-    handleNewServerModal,
-    handleRemoveServerModal,
-    switchServer,
-} from './servers';
-import {
-    handleCloseView, handleGetLastActive, handleGetOrderedViewsForServer, handleOpenView,
-} from './views';
 import {
     clearAppCache,
     getDeeplinkingURL,
@@ -256,7 +236,7 @@ function initializeBeforeAppReady() {
     AllowProtocolDialog.init();
 
     if (isDev && process.env.NODE_ENV !== 'test') {
-        log.info('In development mode, deeplinking is disabled');
+        app.setAsDefaultProtocolClient('mattermost-dev', process.execPath, [path.resolve(process.cwd(), 'dist/')]);
     } else if (mainProtocol) {
         app.setAsDefaultProtocolClient(mainProtocol);
     }
@@ -277,16 +257,8 @@ function initializeInterCommunicationEventListeners() {
         ipcMain.on(OPEN_APP_MENU, handleOpenAppMenu);
     }
 
-    ipcMain.on(SWITCH_SERVER, (event, serverId) => switchServer(serverId));
-    ipcMain.on(SWITCH_TAB, (event, viewId) => ViewManager.showById(viewId));
-    ipcMain.on(CLOSE_VIEW, handleCloseView);
-    ipcMain.on(OPEN_VIEW, handleOpenView);
-
     ipcMain.on(QUIT, handleQuit);
 
-    ipcMain.on(SHOW_NEW_SERVER_MODAL, handleNewServerModal);
-    ipcMain.on(SHOW_EDIT_SERVER_MODAL, handleEditServerModal);
-    ipcMain.on(SHOW_REMOVE_SERVER_MODAL, handleRemoveServerModal);
     ipcMain.handle(GET_AVAILABLE_SPELL_CHECKER_LANGUAGES, () => session.defaultSession.availableSpellCheckerLanguages);
     ipcMain.on(START_UPDATE_DOWNLOAD, handleStartDownload);
     ipcMain.on(START_UPGRADE, handleStartUpgrade);
@@ -295,18 +267,14 @@ function initializeInterCommunicationEventListeners() {
     ipcMain.handle(GET_LOCAL_CONFIGURATION, handleGetLocalConfiguration);
     ipcMain.on(UPDATE_CONFIGURATION, updateConfiguration);
 
-    ipcMain.on(UPDATE_SERVER_ORDER, (event, serverOrder) => ServerManager.updateServerOrder(serverOrder));
-    ipcMain.on(UPDATE_TAB_ORDER, (event, serverId, viewOrder) => ServerManager.updateTabOrder(serverId, viewOrder));
-    ipcMain.handle(GET_LAST_ACTIVE, handleGetLastActive);
-    ipcMain.handle(GET_ORDERED_SERVERS, () => ServerManager.getOrderedServers().map((srv) => srv.toUniqueServer()));
-    ipcMain.handle(GET_ORDERED_TABS_FOR_SERVER, handleGetOrderedViewsForServer);
-
     ipcMain.handle(GET_DARK_MODE, handleGetDarkMode);
     ipcMain.on(WINDOW_CLOSE, handleClose);
     ipcMain.on(WINDOW_MAXIMIZE, handleMaximize);
     ipcMain.on(WINDOW_MINIMIZE, handleMinimize);
     ipcMain.on(WINDOW_RESTORE, handleRestore);
     ipcMain.on(DOUBLE_CLICK_ON_WINDOW, handleDoubleClick);
+
+    ipcMain.on(TOGGLE_SECURE_INPUT, handleToggleSecureInput);
 }
 
 async function initializeAfterAppReady() {
@@ -370,7 +338,11 @@ async function initializeAfterAppReady() {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     if (global.isDev || __IS_NIGHTLY_BUILD__) {
-        installExtension(REACT_DEVELOPER_TOOLS).
+        installExtension(REACT_DEVELOPER_TOOLS, {
+            loadExtensionOptions: {
+                allowFileAccess: true,
+            },
+        }).
             then((name) => log.info(`Added Extension:  ${name}`)).
             catch((err) => log.error('An error occurred: ', err));
     }
@@ -419,56 +391,9 @@ async function initializeAfterAppReady() {
 
     ipcMain.emit('update-dict');
 
-    // supported permission types
-    const supportedPermissionTypes = [
-        'media',
-        'geolocation',
-        'notifications',
-        'fullscreen',
-        'openExternal',
-        'clipboard-sanitized-write',
-    ];
-
     // handle permission requests
     // - approve if a supported permission type and the request comes from the renderer or one of the defined servers
-    defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-        log.debug('permission requested', webContents.getURL(), permission);
-
-        // is the requested permission type supported?
-        if (!supportedPermissionTypes.includes(permission)) {
-            callback(false);
-            return;
-        }
-
-        // is the request coming from the renderer?
-        const mainWindow = MainWindow.get();
-        if (mainWindow && webContents.id === mainWindow.webContents.id) {
-            callback(true);
-            return;
-        }
-
-        if (CallsWidgetWindow.isCallsWidget(webContents.id)) {
-            callback(true);
-            return;
-        }
-
-        const requestingURL = webContents.getURL();
-        const serverURL = ViewManager.getViewByWebContentsId(webContents.id)?.view.server.url;
-
-        if (!serverURL) {
-            callback(false);
-            return;
-        }
-
-        const parsedURL = parseURL(requestingURL);
-        if (!parsedURL) {
-            callback(false);
-            return;
-        }
-
-        // is the requesting url trusted?
-        callback(isTrustedURL(parsedURL, serverURL));
-    });
+    defaultSession.setPermissionRequestHandler(PermissionsManager.handlePermissionRequest);
 
     if (wasUpdated(AppVersionManager.lastAppVersion)) {
         clearAppCache();

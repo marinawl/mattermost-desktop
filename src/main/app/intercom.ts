@@ -6,17 +6,18 @@ import {app, IpcMainEvent, IpcMainInvokeEvent, Menu} from 'electron';
 import {UniqueServer} from 'types/config';
 import {MentionData} from 'types/notification';
 
+import ServerViewState from 'app/serverViewState';
+
 import {Logger} from 'common/log';
 import ServerManager from 'common/servers/serverManager';
 import {ping} from 'common/utils/requests';
 
-import {displayMention} from 'main/notifications';
+import NotificationManager from 'main/notifications';
 import {getLocalPreload, getLocalURLString} from 'main/utils';
 import ModalManager from 'main/views/modalManager';
 import MainWindow from 'main/windows/mainWindow';
 
 import {handleAppBeforeQuit} from './app';
-import {handleNewServerModal, switchServer} from './servers';
 
 const log = new Logger('App.Intercom');
 
@@ -38,6 +39,10 @@ function handleShowOnboardingScreens(showWelcomeScreen: boolean, showNewServerMo
     log.debug('handleShowOnboardingScreens', {showWelcomeScreen, showNewServerModal, mainWindowIsVisible});
 
     if (showWelcomeScreen) {
+        if (ModalManager.isModalDisplayed()) {
+            return;
+        }
+
         handleWelcomeScreenModal();
 
         if (process.env.NODE_ENV === 'test') {
@@ -54,7 +59,7 @@ function handleShowOnboardingScreens(showWelcomeScreen: boolean, showNewServerMo
         return;
     }
     if (showNewServerModal) {
-        handleNewServerModal();
+        ServerViewState.showNewServerModal();
     }
 }
 
@@ -93,11 +98,11 @@ export function handleWelcomeScreenModal() {
     if (!mainWindow) {
         return;
     }
-    const modalPromise = ModalManager.addModal<UniqueServer[], UniqueServer>('welcomeScreen', html, preload, ServerManager.getAllServers().map((server) => server.toUniqueServer()), mainWindow, !ServerManager.hasServers());
+    const modalPromise = ModalManager.addModal<null, UniqueServer>('welcomeScreen', html, preload, null, mainWindow, !ServerManager.hasServers());
     if (modalPromise) {
         modalPromise.then((data) => {
             const newServer = ServerManager.addServer(data);
-            switchServer(newServer.id, true);
+            ServerViewState.switchServer(newServer.id, true);
         }).catch((e) => {
             // e is undefined for user cancellation
             if (e) {
@@ -111,7 +116,7 @@ export function handleWelcomeScreenModal() {
 
 export function handleMentionNotification(event: IpcMainEvent, title: string, body: string, channel: {id: string}, teamId: string, url: string, silent: boolean, data: MentionData) {
     log.debug('handleMentionNotification', {title, body, channel, teamId, url, silent, data});
-    displayMention(title, body, channel, teamId, url, silent, event.sender, data);
+    NotificationManager.displayMention(title, body, channel, teamId, url, silent, event.sender, data);
 }
 
 export function handleOpenAppMenu() {
@@ -141,4 +146,19 @@ export function handlePingDomain(event: IpcMainInvokeEvent, url: string): Promis
         }
         throw new Error('Could not find server ' + url);
     });
+}
+
+export function handleToggleSecureInput(event: IpcMainEvent, secureInput: boolean) {
+    if (process.platform !== 'darwin') {
+        return;
+    }
+
+    // Don't allow this to turn on if the main window isn't focused
+    if (secureInput && !MainWindow.get()?.isFocused()) {
+        return;
+    }
+
+    // Enforce macOS to restrict processes from reading the keyboard input when in a password field
+    log.debug('handleToggleSecureInput', secureInput);
+    app.setSecureKeyboardEntryEnabled(secureInput);
 }

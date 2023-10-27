@@ -36,6 +36,9 @@ import {
     CALLS_WIDGET_SHARE_SCREEN,
     CLOSE_DOWNLOADS_DROPDOWN,
     CALLS_ERROR,
+    CALLS_JOIN_REQUEST,
+    GET_IS_DEV_MODE,
+    TOGGLE_SECURE_INPUT,
 } from 'common/communication';
 
 const UNREAD_COUNT_INTERVAL = 1000;
@@ -54,6 +57,10 @@ if (process.env.NODE_ENV === 'test') {
         getViewInfoForTest: () => ipcRenderer.invoke(GET_VIEW_INFO_FOR_TEST),
     });
 }
+
+contextBridge.exposeInMainWorld('desktopAPI', {
+    isDev: () => ipcRenderer.invoke(GET_IS_DEV_MODE),
+});
 
 ipcRenderer.invoke('get-app-version').then(({name, version}) => {
     appVersion = version;
@@ -352,8 +359,38 @@ ipcRenderer.on(CALLS_ERROR, (event, message) => {
     );
 });
 
+ipcRenderer.on(CALLS_JOIN_REQUEST, (event, message) => {
+    window.postMessage(
+        {
+            type: CALLS_JOIN_REQUEST,
+            message,
+        },
+        window.location.origin,
+    );
+});
+
 /* eslint-enable no-magic-numbers */
 
 window.addEventListener('resize', () => {
     ipcRenderer.send(VIEW_FINISHED_RESIZING);
+});
+
+let isPasswordBox = false;
+const shouldSecureInput = (element, force = false) => {
+    const targetIsPasswordBox = (element && element.tagName === 'INPUT' && element.type === 'password');
+    if (targetIsPasswordBox && (!isPasswordBox || force)) {
+        ipcRenderer.send(TOGGLE_SECURE_INPUT, true);
+    } else if (!targetIsPasswordBox && (isPasswordBox || force)) {
+        ipcRenderer.send(TOGGLE_SECURE_INPUT, false);
+    }
+
+    isPasswordBox = targetIsPasswordBox;
+};
+
+window.addEventListener('focusin', (event) => {
+    shouldSecureInput(event.target);
+});
+
+window.addEventListener('focus', () => {
+    shouldSecureInput(document.activeElement, true);
 });

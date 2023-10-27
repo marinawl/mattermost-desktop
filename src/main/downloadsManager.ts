@@ -31,7 +31,7 @@ import {APP_UPDATE_KEY, UPDATE_DOWNLOAD_ITEM} from 'common/constants';
 import {DOWNLOADS_DROPDOWN_AUTOCLOSE_TIMEOUT, DOWNLOADS_DROPDOWN_MAX_ITEMS} from 'common/utils/constants';
 import * as Validator from 'common/Validator';
 import {localizeMessage} from 'main/i18nManager';
-import {displayDownloadCompleted} from 'main/notifications';
+import NotificationManager from 'main/notifications';
 import ViewManager from 'main/views/viewManager';
 import MainWindow from 'main/windows/mainWindow';
 import {doubleSecToMs, getPercentage, isStringWithLength, readFilenameFromContentDispositionHeader, shouldIncrementFilename} from 'main/utils';
@@ -174,14 +174,19 @@ export class DownloadsManager extends JsonFileManager<DownloadedItems> {
         }
 
         for (const file of Object.values(this.downloads)) {
-            if (file.bookmark) {
-                this.bookmarks.set(this.getDownloadedFileId(file), {originalPath: file.location, bookmark: file.bookmark});
+            try {
+                if (file.bookmark) {
+                    this.bookmarks.set(this.getDownloadedFileId(file), {originalPath: file.location, bookmark: file.bookmark});
 
-                if (file.mimeType?.toLowerCase().startsWith('image/')) {
-                    const func = app.startAccessingSecurityScopedResource(file.bookmark);
-                    fs.copyFileSync(file.location, path.resolve(app.getPath('temp'), path.basename(file.location)));
-                    func();
+                    if (file.mimeType?.toLowerCase().startsWith('image/')) {
+                        const func = app.startAccessingSecurityScopedResource(file.bookmark);
+                        fs.copyFileSync(file.location, path.resolve(app.getPath('temp'), path.basename(file.location)));
+                        func();
+                    }
                 }
+            } catch (e) {
+                log.warn('could not load bookmark', file.filename, e);
+                this.clearFile(file);
             }
         }
     }
@@ -201,9 +206,9 @@ export class DownloadsManager extends JsonFileManager<DownloadedItems> {
                     continue;
                 }
 
-                // Remove update if app was updated and restarted
+                // Remove update if app was updated and restarted OR if we disabled auto updates
                 if (fileId === APP_UPDATE_KEY) {
-                    if (appVersionManager.lastAppVersion === file.filename) {
+                    if (appVersionManager.lastAppVersion === file.filename || !Config.canUpgrade) {
                         delete downloads[APP_UPDATE_KEY];
                         modified = true;
                         continue;
@@ -554,7 +559,7 @@ export class DownloadsManager extends JsonFileManager<DownloadedItems> {
         log.debug('doneEventController', {state});
 
         if (state === 'completed' && !this.open) {
-            displayDownloadCompleted(path.basename(item.savePath), item.savePath, ViewManager.getViewByWebContentsId(webContents.id)?.view.server.name ?? '');
+            NotificationManager.displayDownloadCompleted(path.basename(item.savePath), item.savePath, ViewManager.getViewByWebContentsId(webContents.id)?.view.server.name ?? '');
         }
 
         const bookmark = this.bookmarks.get(this.getFileId(item));

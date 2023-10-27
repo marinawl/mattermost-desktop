@@ -1,7 +1,7 @@
 // Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {BrowserWindow, session, shell, WebContents} from 'electron';
+import {BrowserWindow, session, shell, WebContents, Event} from 'electron';
 
 import Config from 'common/config';
 import {Logger} from 'common/log';
@@ -78,7 +78,7 @@ export class WebContentsEventManager {
         }
 
         if (CallsWidgetWindow.isCallsWidget(webContentsId)) {
-            return CallsWidgetWindow.getURL();
+            return CallsWidgetWindow.getViewURL();
         }
 
         return ViewManager.getViewByWebContentsId(webContentsId)?.view.server.url;
