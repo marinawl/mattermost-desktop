@@ -1,7 +1,9 @@
 {
   "publish": [
     {
-    "provider": "github"
+      "provider": "github",
+      "owner": "ilseong",
+      "repo": "mattermost-desktop"
     }
   ],
   "appId": "Mattermost.Desktop",
