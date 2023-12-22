@@ -5,7 +5,7 @@ import {app, shell, Notification, screen, BrowserWindow} from 'electron';
 
 import {getDoNotDisturb as getDarwinDoNotDisturb} from 'macos-notification-state';
 
-import {MentionData, SenderData} from 'types/notification';
+import {SenderData} from 'types/notification';
 
 import Config from 'common/config';
 import {PLAY_SOUND, NOTIFICATION_CLICKED} from 'common/communication';
@@ -15,12 +15,13 @@ import PermissionsManager from '../permissionsManager';
 import ViewManager from '../views/viewManager';
 import MainWindow from '../windows/mainWindow';
 
+import {getServerURLString} from '../utils';
+
 import {Mention} from './Mention';
 import {DownloadNotification} from './Download';
 import {NewVersionNotification, UpgradeNotification} from './Upgrade';
 import getLinuxDoNotDisturb from './dnd-linux';
 import getWindowsDoNotDisturb from './dnd-windows';
-import {getServerURLString} from "../utils";
 
 const log = new Logger('Notifications');
 
@@ -142,17 +143,22 @@ class NotificationManager {
 
     public displayCustomCommand(sender: SenderData) {
         const {message, name, imgUrl, baseUrl} = sender;
+
         const {win: parentWindow} = MainWindow;
         const displays = screen.getAllDisplays();
-        let content = '', windowOption = {}, windowUrl = '';
+        let content = '';
+        let windowOption = {};
+        let windowUrl = '';
 
         // 명령어가 들어가 있을 경우 호출
-        if(message?.trim().indexOf('!호출') === 0) {
+        if (message?.trim().indexOf('!호출') === 0) {
             // 이미 호출되어 있는 경우 호출하지 않음
-            if(windowIsVisible('Window_Call_User')) return ;
+            if (windowIsVisible('Window_Call_User')) {
+                return;
+            }
 
             content = sliceExclamationMarkCommand('!호출', message);
-            windowUrl = '/command/callUser'
+            windowUrl = '/command/callUser';
             windowOption = {
                 width: displays[0].size.width,
                 height: displays[0].size.height,
@@ -166,12 +172,12 @@ class NotificationManager {
                 parent: parentWindow,
                 modal: true,
                 focusable: false,
-                show: false
-            }
+                show: false,
+            };
         }
 
         // 띄울 html 이 설정 된 경우만 호출
-        if(windowUrl) {
+        if (windowUrl) {
             // html 에 넘길 param
             const query = new Map<string, string>();
 
@@ -189,10 +195,11 @@ class NotificationManager {
             mainModal.loadURL(getServerURLString(baseUrl + windowUrl, query));
 
             const subModals: BrowserWindow[] = [];
+
             // 다중 모니터일경우
-            if(displays?.length > 1) {
+            if (process.platform === 'win32' && displays?.length > 1) {
                 // 모니터 갯수만큼 modal 창 생성
-                for(let i = 1; i < displays.length; i++) {
+                for (let i = 1; i < displays.length; i++) {
                     const subModal = new BrowserWindow({
                         width: displays[i].size.width,
                         height: displays[i].size.height,
@@ -205,7 +212,7 @@ class NotificationManager {
                         frame: false,
                         modal: true,
                         focusable: false,
-                        show: false
+                        show: false,
                     });
 
                     // 다중 모니터 포지션 설정
@@ -215,14 +222,14 @@ class NotificationManager {
 
                 // 호출 창 종료시 나머지 서브창도 종료되게 설정
                 mainModal.once('closed', () => {
-                    subModals.forEach(modal => modal.close())
+                    subModals.forEach((modal) => modal.close());
                 });
             }
 
             // 메인 모달창 load 완료 후 subModal 까지 show
             mainModal.webContents.on('did-finish-load', () => {
                 mainModal.show();
-                subModals.forEach((modal) => modal.show())
+                subModals.forEach((modal) => modal.show());
             });
         }
     }
@@ -302,5 +309,5 @@ function sliceExclamationMarkCommand(command: string, word: string) {
 function windowIsVisible(title: string) {
     const windows = BrowserWindow.getAllWindows();
 
-    return windows.findIndex(window => window.getTitle() === title) > -1;
+    return windows.findIndex((window) => window.getTitle() === title) > -1;
 }

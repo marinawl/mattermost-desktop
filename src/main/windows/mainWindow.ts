@@ -46,7 +46,7 @@ const log = new Logger('MainWindow');
 const ALT_MENU_KEYS = ['Alt+F', 'Alt+E', 'Alt+V', 'Alt+H', 'Alt+W', 'Alt+P'];
 
 export class MainWindow extends EventEmitter {
-    private win?: BrowserWindow;
+    public win?: BrowserWindow;
 
     private savedWindowState?: SavedWindowState;
     private ready: boolean;

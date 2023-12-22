@@ -39,7 +39,7 @@ import {
     CALLS_POPOUT_FOCUS,
     GET_DESKTOP_SOURCES,
     UNREADS_AND_MENTIONS,
-    LEGACY_OFF,
+    LEGACY_OFF, CALLS_CUSTOM_COMMAND,
 } from 'common/communication';
 
 const createListener: ExternalAPI['createListener'] = (channel: string, listener: (...args: never[]) => void) => {
@@ -257,6 +257,7 @@ const getUnreadCount = () => {
 // Disabling no-explicit-any for this legacy code
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 window.addEventListener('message', ({origin, data = {}}: {origin?: string; data?: {type?: string; message?: any}} = {}) => {
+    console.log('알림', data);
     const {type, message = {}} = data;
     if (origin !== window.location.origin) {
         return;
@@ -278,8 +279,9 @@ window.addEventListener('message', ({origin, data = {}}: {origin?: string; data?
         break;
     }
     case 'dispatch-notification': {
-        const {title, body, channel, teamId, url, silent, data: messageData} = message;
+        const {title, body, channel, teamId, url, silent, data: messageData, sender} = message;
         channels.set(channel.id, channel);
+        ipcRenderer.send(CALLS_CUSTOM_COMMAND, sender);
         ipcRenderer.send(NOTIFY_MENTION, title, body, channel.id, teamId, url, silent, messageData.soundName);
         break;
     }
