@@ -32,6 +32,11 @@ const log = new Logger('UpdateManager');
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 autoUpdater.disableWebInstaller = true;
+autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'marinawl',
+    repo: 'mattermost-desktop',
+})
 
 const assetsDir = path.resolve(app.getAppPath(), 'assets');
 const appIconURL = path.resolve(assetsDir, 'appicon_with_spacing_32.png');
@@ -173,13 +178,6 @@ export class UpdateManager {
             if (manually) {
                 autoUpdater.once('update-not-available', this.displayNoUpgrade);
             }
-            autoUpdater.setFeedURL({
-                provider: 'github',
-                repo:'mattermost_test_desktop',
-                owner: 'tnfl',
-                private: true,
-                token: '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'
-            })
             autoUpdater.checkForUpdates().then((result) => {
                 if (!result?.updateInfo) {
                     ipcMain.emit(NO_UPDATE_AVAILABLE);

@@ -1,9 +1,11 @@
 // Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import {app, shell, Notification} from 'electron';
+import {app, shell, Notification, screen, BrowserWindow} from 'electron';
 
 import {getDoNotDisturb as getDarwinDoNotDisturb} from 'macos-notification-state';
+
+import {MentionData, SenderData} from 'types/notification';
 
 import Config from 'common/config';
 import {PLAY_SOUND, NOTIFICATION_CLICKED} from 'common/communication';
@@ -18,6 +20,7 @@ import {DownloadNotification} from './Download';
 import {NewVersionNotification, UpgradeNotification} from './Upgrade';
 import getLinuxDoNotDisturb from './dnd-linux';
 import getWindowsDoNotDisturb from './dnd-windows';
+import {getLocalURLString} from "../utils";
 
 const log = new Logger('Notifications');
 
@@ -137,6 +140,48 @@ class NotificationManager {
         download.show();
     }
 
+    public displayCustomCommand(sender: SenderData) {
+        const {message, name, imgUrl} = sender;
+        const {win: parentWindow} = MainWindow;
+        let content = '', windowOption = {}, windowUrl = '';
+
+        // 명령어가 들어가 있을 경우 호출
+        if(message?.trim().indexOf('!호출') === 0) {
+            // 이미 호출되어 있는 경우 호출하지 않음
+            if(windowIsVisible('Window_Call_User')) return ;
+
+            content = sliceExclamationMarkCommand('!호출', message);
+            windowUrl = 'callUser.html'
+            windowOption = {
+                width: screen.getPrimaryDisplay().workAreaSize.width,
+                height: screen.getPrimaryDisplay().workAreaSize.height,
+                resizable: false,
+                alwaysOnTop: true,
+                fullscreen: true,
+                backgroundColor: '#ffffff',
+                frame: false,
+                skipTaskbar: true,
+                transparent: true,
+                parent: parentWindow,
+                modal: true
+            }
+        }
+
+        // 띄울 html 이 설정 된 경우만 호출
+        if(windowUrl) {
+            // html 에 넘길 param
+            const query = new Map<string, string>();
+
+            query.set('imgUrl', imgUrl);
+            query.set('name', name);
+            query.set('content', content);
+
+            const newWindow = new BrowserWindow(windowOption);
+
+            newWindow.loadURL(getLocalURLString(windowUrl, query));
+        }
+    }
+
     public displayUpgrade(version: string, handleUpgrade: () => void): void {
         if (!Notification.isSupported()) {
             log.error('notification not supported');
@@ -204,3 +249,13 @@ function flashFrame(flash: boolean) {
 
 const notificationManager = new NotificationManager();
 export default notificationManager;
+
+function sliceExclamationMarkCommand(command: string, word: string) {
+    return word?.replace(command, '') || '';
+}
+
+function windowIsVisible(title: string) {
+    const windows = BrowserWindow.getAllWindows();
+
+    return windows.findIndex(window => window.getTitle() === title) > -1;
+}

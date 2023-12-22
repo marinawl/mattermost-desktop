@@ -6,3 +6,9 @@ import {NotificationConstructorOptions} from 'electron/common';
 export type MentionOptions = NotificationConstructorOptions & {
     soundName: string;
 }
+
+export type SenderData = {
+    imgUrl: string,
+    name: string,
+    message: string
+}

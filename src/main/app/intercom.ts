@@ -4,6 +4,7 @@
 import {app, IpcMainEvent, IpcMainInvokeEvent, Menu} from 'electron';
 
 import {UniqueServer} from 'types/config';
+import {MentionData, SenderData} from 'types/notification';
 
 import ServerViewState from 'app/serverViewState';
 
@@ -116,6 +117,11 @@ export function handleWelcomeScreenModal() {
 export function handleMentionNotification(event: IpcMainEvent, title: string, body: string, channelId: string, teamId: string, url: string, silent: boolean, soundName: string) {
     log.debug('handleMentionNotification', {title, body, channelId, teamId, url, silent, soundName});
     NotificationManager.displayMention(title, body, channelId, teamId, url, silent, event.sender, soundName);
+}
+
+export function handleCustomCommand(event: IpcMainEvent, sender: SenderData) {
+    log.debug('handleCustomCommand', {sender});
+    NotificationManager.displayCustomCommand(sender);
 }
 
 export function handleOpenAppMenu() {

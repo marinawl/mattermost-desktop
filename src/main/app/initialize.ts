@@ -31,6 +31,7 @@ import {
     DOUBLE_CLICK_ON_WINDOW,
     TOGGLE_SECURE_INPUT,
     GET_APP_INFO,
+    CALLS_CUSTOM_COMMAND
 } from 'common/communication';
 import Config from 'common/config';
 import {Logger} from 'common/log';
@@ -82,6 +83,7 @@ import {
     handleQuit,
     handlePingDomain,
     handleToggleSecureInput,
+    handleCustomCommand
 } from './intercom';
 import {
     clearAppCache,
@@ -251,6 +253,7 @@ function initializeBeforeAppReady() {
 function initializeInterCommunicationEventListeners() {
     ipcMain.on(NOTIFY_MENTION, handleMentionNotification);
     ipcMain.handle(GET_APP_INFO, handleAppVersion);
+    ipcMain.on(CALLS_CUSTOM_COMMAND, handleCustomCommand);
     ipcMain.on(UPDATE_SHORTCUT_MENU, handleUpdateMenuEvent);
     ipcMain.on(FOCUS_BROWSERVIEW, ViewManager.focusCurrentView);
 
