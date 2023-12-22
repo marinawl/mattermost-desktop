@@ -20,7 +20,7 @@ import {DownloadNotification} from './Download';
 import {NewVersionNotification, UpgradeNotification} from './Upgrade';
 import getLinuxDoNotDisturb from './dnd-linux';
 import getWindowsDoNotDisturb from './dnd-windows';
-import {getLocalURLString} from "../utils";
+import {getServerURLString} from "../utils";
 
 const log = new Logger('Notifications');
 
@@ -141,8 +141,9 @@ class NotificationManager {
     }
 
     public displayCustomCommand(sender: SenderData) {
-        const {message, name, imgUrl} = sender;
+        const {message, name, imgUrl, baseUrl} = sender;
         const {win: parentWindow} = MainWindow;
+        const displays = screen.getAllDisplays();
         let content = '', windowOption = {}, windowUrl = '';
 
         // 명령어가 들어가 있을 경우 호출
@@ -151,19 +152,21 @@ class NotificationManager {
             if(windowIsVisible('Window_Call_User')) return ;
 
             content = sliceExclamationMarkCommand('!호출', message);
-            windowUrl = 'callUser.html'
+            windowUrl = '/command/callUser'
             windowOption = {
-                width: screen.getPrimaryDisplay().workAreaSize.width,
-                height: screen.getPrimaryDisplay().workAreaSize.height,
+                width: displays[0].size.width,
+                height: displays[0].size.height,
                 resizable: false,
                 alwaysOnTop: true,
                 fullscreen: true,
                 backgroundColor: '#ffffff',
-                frame: false,
                 skipTaskbar: true,
                 transparent: true,
+                frame: false,
                 parent: parentWindow,
-                modal: true
+                modal: true,
+                focusable: false,
+                show: false
             }
         }
 
@@ -176,9 +179,51 @@ class NotificationManager {
             query.set('name', name);
             query.set('content', content);
 
-            const newWindow = new BrowserWindow(windowOption);
+            // main modal 생성
+            const mainModal = new BrowserWindow(windowOption);
 
-            newWindow.loadURL(getLocalURLString(windowUrl, query));
+            // main modal position 을 주 모니터로 설정
+            mainModal.setPosition(displays[0].bounds.x, displays[0].bounds.y);
+
+            // main modal URL 호출
+            mainModal.loadURL(getServerURLString(baseUrl + windowUrl, query));
+
+            const subModals: BrowserWindow[] = [];
+            // 다중 모니터일경우
+            if(displays?.length > 1) {
+                // 모니터 갯수만큼 modal 창 생성
+                for(let i = 1; i < displays.length; i++) {
+                    const subModal = new BrowserWindow({
+                        width: displays[i].size.width,
+                        height: displays[i].size.height,
+                        resizable: false,
+                        alwaysOnTop: true,
+                        fullscreen: true,
+                        backgroundColor: '#ffffff',
+                        skipTaskbar: true,
+                        transparent: true,
+                        frame: false,
+                        modal: true,
+                        focusable: false,
+                        show: false
+                    });
+
+                    // 다중 모니터 포지션 설정
+                    subModal.setPosition(displays[i].bounds.x, displays[i].bounds.y);
+                    subModals.push(subModal);
+                }
+
+                // 호출 창 종료시 나머지 서브창도 종료되게 설정
+                mainModal.once('closed', () => {
+                    subModals.forEach(modal => modal.close())
+                });
+            }
+
+            // 메인 모달창 load 완료 후 subModal 까지 show
+            mainModal.webContents.on('did-finish-load', () => {
+                mainModal.show();
+                subModals.forEach((modal) => modal.show())
+            });
         }
     }
 
