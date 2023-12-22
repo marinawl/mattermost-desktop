@@ -2,10 +2,10 @@
   "publish": [
     {
       "provider": "github",
-      "owner": "ilseong",
+      "owner": "ilseong-xofl",
       "repo": "mattermost-desktop",
       "private": true,
-      "token": "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"
+      "token": "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"
     }
   ],
   "appId": "Mattermost.Desktop",
