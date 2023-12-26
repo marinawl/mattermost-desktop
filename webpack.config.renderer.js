@@ -32,6 +32,7 @@ module.exports = merge(base, {
         certificateModal: './src/renderer/modals/certificate/certificate.tsx',
         loadingScreen: './src/renderer/modals/loadingScreen/index.tsx',
         welcomeScreen: './src/renderer/modals/welcomeScreen/welcomeScreen.tsx',
+        callUser: './src/renderer/modals/messageCommand/CallUser.tsx',
     },
     output: {
         path: path.resolve(__dirname, 'dist/renderer'),
@@ -122,6 +123,12 @@ module.exports = merge(base, {
             template: 'src/renderer/index.html',
             chunks: ['welcomeScreen'],
             filename: 'welcomeScreen.html',
+        }),
+        new HtmlWebpackPlugin({
+            title: 'Window_Call_User',
+            template: 'src/renderer/index.html',
+            chunks: ['callUser'],
+            filename: 'callUser.html',
         }),
         new MiniCssExtractPlugin({
             filename: 'styles.[contenthash].css',

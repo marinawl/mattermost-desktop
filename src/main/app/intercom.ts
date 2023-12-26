@@ -114,15 +114,14 @@ export function handleWelcomeScreenModal() {
     }
 }
 
-export function handleMentionNotification(event: IpcMainEvent, title: string, body: string, channelId: string, teamId: string, url: string, silent: boolean, soundName: string, sender: SenderData) {
+export function handleMentionNotification(event: IpcMainEvent, title: string, body: string, channelId: string, teamId: string, url: string, silent: boolean, soundName: string) {
     log.debug('handleMentionNotification', {title, body, channelId, teamId, url, silent, soundName});
-    console.log('handleMentionNotification', {title, body, channelId, teamId, url, silent, soundName});
     NotificationManager.displayMention(title, body, channelId, teamId, url, silent, event.sender, soundName);
 }
 
-export function handleCustomCommand(event: IpcMainEvent, sender: SenderData) {
+export function handleCustomCommand(event: IpcMainEvent, channelId: string, teamId: string, url: string, sender: SenderData) {
     log.debug('handleCustomCommand', {sender});
-    NotificationManager.displayCustomCommand(sender);
+    NotificationManager.displayCustomCommand(channelId, teamId, url, sender, event.sender);
 }
 
 export function handleOpenAppMenu() {

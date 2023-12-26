@@ -15,7 +15,7 @@ import PermissionsManager from '../permissionsManager';
 import ViewManager from '../views/viewManager';
 import MainWindow from '../windows/mainWindow';
 
-import {getServerURLString} from '../utils';
+import {getLocalURLString} from '../utils';
 
 import {Mention} from './Mention';
 import {DownloadNotification} from './Download';
@@ -141,7 +141,7 @@ class NotificationManager {
         download.show();
     }
 
-    public displayCustomCommand(sender: SenderData) {
+    public displayCustomCommand(channelId: string, teamId: string, url: string, sender: SenderData, webcontents: Electron.WebContents) {
         const {message, name, imgUrl, baseUrl} = sender;
 
         const {win: parentWindow} = MainWindow;
@@ -158,7 +158,9 @@ class NotificationManager {
             }
 
             content = sliceExclamationMarkCommand('!호출', message);
-            windowUrl = '/command/callUser';
+
+            // windowUrl = '/command/callUser';
+            windowUrl = 'callUser.html';
             windowOption = {
                 width: displays[0].size.width,
                 height: displays[0].size.height,
@@ -191,8 +193,11 @@ class NotificationManager {
             // main modal position 을 주 모니터로 설정
             mainModal.setPosition(displays[0].bounds.x, displays[0].bounds.y);
 
+            // eslint-disable-next-line no-console
+            console.log(windowUrl);
+
             // main modal URL 호출
-            mainModal.loadURL(getServerURLString(baseUrl + windowUrl, query));
+            mainModal.loadURL(getLocalURLString(windowUrl, query));
 
             const subModals: BrowserWindow[] = [];
 
@@ -219,12 +224,17 @@ class NotificationManager {
                     subModal.setPosition(displays[i].bounds.x, displays[i].bounds.y);
                     subModals.push(subModal);
                 }
-
-                // 호출 창 종료시 나머지 서브창도 종료되게 설정
-                mainModal.once('closed', () => {
-                    subModals.forEach((modal) => modal.close());
-                });
             }
+
+            // 호출 창 종료시 나머지 서브창도 종료되게 설정
+            mainModal.once('closed', () => {
+                // 호출자 채팅방으로 이동
+                webcontents.send(NOTIFICATION_CLICKED, channelId, teamId, url);
+
+                if (subModals.length) {
+                    subModals.forEach((modal) => modal.close());
+                }
+            });
 
             // 메인 모달창 load 완료 후 subModal 까지 show
             mainModal.webContents.on('did-finish-load', () => {
