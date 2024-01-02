@@ -17,6 +17,7 @@ module.exports = merge(base, {
         index: './src/main/app/index.ts',
         internalAPI: './src/main/preload/internalAPI.js',
         externalAPI: './src/main/preload/externalAPI.ts',
+        ilsModalPreload: './src/main/preload/ilsModalPreload.js',
     },
     externals: {
         'macos-notification-state': 'require("macos-notification-state")',

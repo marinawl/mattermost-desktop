@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+<!--    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * 'self' data: https:; style-src 'self' 'unsafe-inline'; media-src data:">-->
+    <title></title>
+</head>
+<body>
+    <div id=app></div>
+    <script>
+        window.api.receive('notiData', (data) => {
+            const avatarUrl = `/Users/schnuhu/mattermost/mattermost-file/users/${data?.userId}/profile.png`
+
+
+            document.getElementById('modal-call-user-profile-img').src = avatarUrl
+        })
+    </script>
+</body>
+</html>

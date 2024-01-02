@@ -8,8 +8,9 @@ export type MentionOptions = NotificationConstructorOptions & {
 }
 
 export type SenderData = {
-    imgUrl: string,
-    name: string,
-    message: string,
-    baseUrl: string
+    imgUrl: string;
+    userId: string;
+    name: string;
+    message: string;
+    baseUrl: string;
 }

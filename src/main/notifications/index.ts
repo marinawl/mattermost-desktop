@@ -15,7 +15,7 @@ import PermissionsManager from '../permissionsManager';
 import ViewManager from '../views/viewManager';
 import MainWindow from '../windows/mainWindow';
 
-import {getLocalURLString} from '../utils';
+import {getLocalPreload, getLocalURLString, getServerURLString} from '../utils';
 
 import {Mention} from './Mention';
 import {DownloadNotification} from './Download';
@@ -142,10 +142,12 @@ class NotificationManager {
     }
 
     public displayCustomCommand(channelId: string, teamId: string, url: string, sender: SenderData, webcontents: Electron.WebContents) {
-        const {message, name, imgUrl, baseUrl} = sender;
+        const {message, name, imgUrl, baseUrl, userId} = sender;
 
         const {win: parentWindow} = MainWindow;
         const displays = screen.getAllDisplays();
+
+        // console.log('first size', displays)
         let content = '';
         let windowOption = {};
         let windowUrl = '';
@@ -157,25 +159,56 @@ class NotificationManager {
                 return;
             }
 
+            // 메세지에서 !호출 제거
             content = sliceExclamationMarkCommand('!호출', message);
 
-            // windowUrl = '/command/callUser';
-            windowUrl = 'callUser.html';
+            // preload 불러오기
+            const preload = getLocalPreload('ilsModalPreload.js');
+
+            // Mattermost Server Url 로 호출
+            // ex) http://localhost:8065/command/callUser
+            windowUrl = '/command/callUser';
+
+            // Mattermost Desktop 에 있는 html 로 호출
+            // 이미지 401 때문에 미사용처리
+            // windowUrl = 'callUser.html';
+
             windowOption = {
-                width: displays[0].size.width,
-                height: displays[0].size.height,
-                resizable: false,
-                alwaysOnTop: true,
-                fullscreen: true,
-                backgroundColor: '#ffffff',
-                skipTaskbar: true,
-                transparent: true,
-                frame: false,
-                parent: parentWindow,
-                modal: true,
-                focusable: false,
-                show: false,
+                width: displays[0].size.width, // width
+                height: displays[0].size.height, // height
+                resizable: false, // modal 크기 조절
+                alwaysOnTop: true, // 상단고정
+                fullscreen: process.platform === 'win32', // 전체화면
+                backgroundColor: '#ffffff', // 배경색
+                skipTaskbar: true, // 작업표시줄 제거
+                transparent: true, // 투명
+                frame: false, // 프레임 제거
+                parent: parentWindow, // 부모창 설정
+                modal: true, // 모달
+                focusable: false, // 포커스 제거
+                show: false, // show false 로 설정
+                center: true, // 중앙정렬
+                webPreferences: { // webPreferences 설정
+                    nativeWindowOpen: true,
+                    transparent: true,
+                    preload,
+                },
             };
+
+            // 맥북일 경우 width, height 를 현재 Mattermost 가 띄워진 창으로 직접 설정
+            if (process.platform === 'darwin') {
+                // 현재 Mattermost 가 띄워진 창
+                const display = screen?.getDisplayNearestPoint(parentWindow?.getBounds() as any);
+
+                if (display) {
+                    // width, height 설정
+                    windowOption = {
+                        ...windowOption,
+                        width: display?.size.width,
+                        height: display?.size.height,
+                    };
+                }
+            }
         }
 
         // 띄울 html 이 설정 된 경우만 호출
@@ -183,9 +216,10 @@ class NotificationManager {
             // html 에 넘길 param
             const query = new Map<string, string>();
 
-            query.set('imgUrl', imgUrl);
-            query.set('name', name);
-            query.set('content', content);
+            query.set('imgUrl', imgUrl); // 이미지 경로
+            query.set('name', name); // 호출자
+            query.set('content', content); // 내용
+            query.set('userId', userId); // 호출자 id
 
             // main modal 생성
             const mainModal = new BrowserWindow(windowOption);
@@ -193,15 +227,13 @@ class NotificationManager {
             // main modal position 을 주 모니터로 설정
             mainModal.setPosition(displays[0].bounds.x, displays[0].bounds.y);
 
-            // eslint-disable-next-line no-console
-            console.log(windowUrl);
-
             // main modal URL 호출
-            mainModal.loadURL(getLocalURLString(windowUrl, query));
+            // mainModal.loadURL(getLocalURLString(windowUrl, query));
+            mainModal.loadURL(getServerURLString(baseUrl + windowUrl, query));
 
             const subModals: BrowserWindow[] = [];
 
-            // 다중 모니터일경우
+            // 다중 모니터일경우 ( 윈도우만 적용 )
             if (process.platform === 'win32' && displays?.length > 1) {
                 // 모니터 갯수만큼 modal 창 생성
                 for (let i = 1; i < displays.length; i++) {
@@ -226,12 +258,14 @@ class NotificationManager {
                 }
             }
 
+
             // 호출 창 종료시 나머지 서브창도 종료되게 설정
             mainModal.once('closed', () => {
                 // 호출자 채팅방으로 이동
                 webcontents.send(NOTIFICATION_CLICKED, channelId, teamId, url);
 
                 if (subModals.length) {
+                    // 서브 모달창 닫기
                     subModals.forEach((modal) => modal.close());
                 }
             });
@@ -239,7 +273,14 @@ class NotificationManager {
             // 메인 모달창 load 완료 후 subModal 까지 show
             mainModal.webContents.on('did-finish-load', () => {
                 mainModal.show();
+
+                // 서브 모달창 show
                 subModals.forEach((modal) => modal.show());
+            });
+
+            mainModal.once('show', () => {
+                // 메인 모달 생성 후 html 에 데이터 전달
+                mainModal.webContents.send('notiData', sender);
             });
         }
     }

@@ -126,7 +126,7 @@ module.exports = merge(base, {
         }),
         new HtmlWebpackPlugin({
             title: 'Window_Call_User',
-            template: 'src/renderer/index.html',
+            template: 'src/renderer/modals/messageCommand/index.html',
             chunks: ['callUser'],
             filename: 'callUser.html',
         }),

@@ -12,6 +12,8 @@ const CallUser = () => {
     const content = decodeURIComponent(urlParams.get('content')!);
     const imgUrl = decodeURIComponent(urlParams.get('imgUrl')!);
     const name = decodeURIComponent(urlParams.get('name')!);
+    const userId = decodeURIComponent(urlParams.get('userId')!);
+    const avatarUrl = `http://localhost:8065/api/v4/users/${userId}/image`;
 
     const onWindowClose = () => {
         window.close();
@@ -21,7 +23,7 @@ const CallUser = () => {
         <div className={'modal-call-user'}>
             <div className={'modal-call-user-profile'}>
                 <img
-                    src={imgUrl}
+                    id={'modal-call-user-profile-img'}
                     alt=''
                     loading={'lazy'}
                     width={50}
@@ -30,7 +32,7 @@ const CallUser = () => {
             </div>
             <div className={'modal-call-user-caller'}>
                 <p>
-                    <strong>{name}</strong>{'님 호출'}
+                    <strong id={'test'}>{name}</strong>{'님 호출'}
                 </p>
             </div>
 
